@@ -1,3 +1,10 @@
+#output folders
+/src/Win32/
+/src/x64/
+
+#vs extensions
+/src/.vs/
+
 # Compiled Object files
 *.o
 *.obj
