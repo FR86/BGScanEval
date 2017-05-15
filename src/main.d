@@ -27,4 +27,14 @@ unittest
     assert(abs(results.betas[0] + 0.328) < 0.001);
     //check slope
     assert(abs(results.betas[1] - 1.046) < 0.001);
+
+    //linear regression with intercept fixed at zero
+    results = linearRegress(signal,time);
+    assert(abs(results.betas[0] - 0.980) < 0.001);
+
+    //linear regression with defined intercept
+    double intercept = 0.5;
+    import std.algorithm : map;
+    results = linearRegress(map!(a => a + intercept)(signal), time);
+    assert(abs(results.betas[0] - 1.080) < 0.001);
 }
