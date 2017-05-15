@@ -17,20 +17,6 @@ For now, look at
 * read in appropriate column using std.csv
 * calculate standard deviation of the appropriate column using dstats.summary.stdev (https://github.com/DlangScience/dstats)
 * for 44 calculate slope using dstats.regress.linearRegress
-  ```D
-  //To fit a simple line:
-  double[] signal = [2,7,1,8,2,8,1];
-  double[] time = [1,2,3,4,5,6,7];
-
-  // Using default confidence interval:
-  auto results = linearRegress(signal, repeat(1), time);
-  //with intercept fixed at 0
-  //auto results = linearRegress(signal, time);
-  //with intercept fixed at a
-  //double a = 5
-  //double signalPlusIntercept[] = signal[] + a
-  //auto results = linearRegress(signalPlusIntercept, time);
-  ```
   or going with this: https://en.wikipedia.org/wiki/Simple_linear_regression#Fitting_the_regression_line
   or take inspiration from here: http://machinelearningmastery.com/implement-simple-linear-regression-scratch-python
 
