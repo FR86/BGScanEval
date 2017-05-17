@@ -3,9 +3,15 @@ import std.stdio;
 import dstats.summary;
 import dstats.regress;
 
+string workingDir;
+
 int main(string[] argv)
 {
-    return 1;
+    workingDir = getWorkingDir(argv);
+    if (workingDir.length == 0) {return 1;}
+
+    //at this stage, we have found our working directory
+    return 0;
 }
 
 unittest
