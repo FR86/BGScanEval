@@ -3,9 +3,15 @@ import std.stdio;
 import dstats.summary;
 import dstats.regress;
 
+string workingDir;
+
 int main(string[] argv)
 {
-    return 1;
+    workingDir = getWorkingDir(argv);
+    if (workingDir.length == 0) {return 1;}
+
+    //at this stage, we have found our working directory
+    return 0;
 }
 
 unittest
@@ -74,8 +80,6 @@ string getWorkingDir(string[] cmdLineParams)
             }
             catch(FileException)
             {
-                writeln("boom");
-                readln();
                 //this is entered when the path is valid but does not point to an existing directory
                 //nothing to do here, existingPathFound is false already
             }
