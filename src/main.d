@@ -61,27 +61,18 @@ string getWorkingDir(string[] cmdLineParams)
     if (cmdLineParams.length > 1)
     {
         wd = cmdLineParams[1];
-        import std.path : isValidPath;
-        //check if wd is in principle a valid path
-        if (wd.isValidPath)
+        import std.path : exists;
+        //check if wd is in principle a valid path 
+        if (wd.exists)
         {
-            import std.file : FileException, isDir;
-            try
+            existingPathFound = true;
+            //check if wd points to a file instead of a directory
+            import std.file : isDir;
+            if (!wd.isDir)
             {
-                //check if wd already points to an existing directory
-                if (!wd.isDir)
-                {
-                    //if this enters (no exception) then we have found an existing file, but not a folder
-                    //strip the file off the path
-                    import std.path : dirName;
-                    wd = wd.dirName;
-                }
-                existingPathFound = true;
-            }
-            catch(FileException)
-            {
-                //this is entered when the path is valid but does not point to an existing directory
-                //nothing to do here, existingPathFound is false already
+                //strip the file off the path
+                import std.path : dirName;
+                wd = wd.dirName;
             }
         }
     }
