@@ -38,3 +38,50 @@ unittest
     results = linearRegress(map!(a => a + intercept)(signal), time);
     assert(abs(results.betas[0] - 1.080) < 0.001);
 }
+
+
+/**
+ * Get a working directory from command line parameters.
+ * 
+ * Returns: The working directory extracted from the second command line parameter
+ * or an empty string if that parameter does not contain anything we can get an existing directory from.
+ */
+string getWorkingDir(string[] cmdLineParams)
+{
+    string wd;
+    bool existingPathFound = false;
+    //check if we have received a path to work with at all,
+    //need to have at least 2 cmd line parameters for that
+    if (cmdLineParams.length > 1)
+    {
+        wd = cmdLineParams[1];
+        import std.path : isValidPath;
+        //check if wd is in principle a valid path
+        if (wd.isValidPath)
+        {
+            import std.file : FileException, isDir;
+            try
+            {
+                //check if wd already points to an existing directory
+                if (!wd.isDir)
+                {
+                    //if this enters (no exception) then we have found an existing file, but not a folder
+                    //strip the file off the path
+                    import std.path : dirName;
+                    wd = wd.dirName;
+                }
+                existingPathFound = true;
+            }
+            catch(FileException)
+            {
+                writeln("boom");
+                readln();
+                //this is entered when the path is valid but does not point to an existing directory
+                //nothing to do here, existingPathFound is false already
+            }
+        }
+    }
+    if (!existingPathFound) {wd = "";}
+    import std.path : buildNormalizedPath;
+    return buildNormalizedPath(wd);
+}
