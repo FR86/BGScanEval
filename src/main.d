@@ -80,3 +80,67 @@ string getWorkingDir(string[] cmdLineParams)
     import std.path : buildNormalizedPath;
     return buildNormalizedPath(wd);
 }
+
+/**
+ * Get a list of files in a directory, optionally filtered by extension.
+ * Params:
+ *  extensions = Optional array of extensions _without_ preceding dot.
+ * Returns: An array of strings representing the found files.
+ */
+string[] fileList(string pathname, string[] extensions = [])
+in
+{
+    import std.path : exists;
+    import std.file : isDir;
+    //Right now, I consider the use on a path that hasn't been checked for existence a programming error.
+    assert (pathname.exists && pathname.isDir);
+    //Using empty extension strings is an error as well
+    if(extensions.length > 0)
+    {
+        foreach (ext; extensions)
+        {
+            assert(ext.length > 0);
+            //Check for max length?
+        }
+    }
+}
+body
+{
+    import std.file;
+    import std.path;
+    import std.algorithm;
+    import std.array;
+    
+    if (extensions.length == 0)
+    {
+        //no extensions specified, just give all files in the folder, just this folder
+        return std.file.dirEntries(pathname, SpanMode.shallow)
+            //make sure what we have is a file
+            .filter!(a => a.isFile)
+            //get the name of the file off the DirEntry and strip directory
+            .map!(a => std.path.baseName(a.name))
+            //copy results into new dynamic array
+            .array;
+    }
+    else
+    {
+        //build a pattern to feed into the filtered version of dirEntries
+        string pattern;
+        pattern = "*.{";
+        foreach(ext; extensions)
+        {
+            pattern ~= ext ~ ",";
+        }
+        import std.string;
+        //Strip the last comma
+        pattern = pattern.chop ~ "}";
+
+        return std.file.dirEntries(pathname, pattern, SpanMode.shallow)
+            .filter!(a => a.isFile)
+            .map!(a => std.path.baseName(a.name))
+            .array;
+    }
+    
+
+    
+}
