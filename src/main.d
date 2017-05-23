@@ -174,6 +174,7 @@ in
     import std.path : exists;
     import std.file : isDir;
     //Right now, I consider the use on a path that hasn't been checked for existence a programming error.
+    //this is a problem when directory is moved/renamed/deleted in the meantime
     assert (pathname.exists && pathname.isDir);
     //Using empty extension strings is an error as well
     if(extensions.length > 0)
