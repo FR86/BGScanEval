@@ -100,6 +100,53 @@ public:
     }
 }
 
+import std.file : FileException;
+/** This function will try to read a data trace from a csv file.
+    Time is assumed to be in the first column (index 0).
+    Params:
+        filePath = Path to the csv file to be parsed
+        dataColumn = zero-based index of the data column.
+    Throws:
+        FileException if path cannot be found, anything goes wrong when reading or things don't add up in the file
+*/
+dataTrace getTraceFromCsv(string filePath, int dataColumn)
+{
+    double[] time, data;
+    
+    import std.file;
+    import std.algorithm;
+    import std.csv;
+    import std.typecons;
+    import std.string : chomp;
+    auto dataFile = File(filePath, "r");
+    auto rawLines = dataFile.byLine!(wchar,wchar);
+    foreach (line; rawLines)
+    {
+        import std.utf;
+        //Duh. UTF16 sucks.
+        writeln(line.byUTF!wchar()[0], ',', line.byUTF!wchar()[1]);
+    }
+    auto commaLessLines = rawLines.map!(line => chomp(line, ","));
+    
+    auto filteredLines = rawLines.filter!(line => line.length > 0);
+    foreach (line; filteredLines)
+    {
+        writeln(line);
+    }
+    //
+    //auto input = filteredLines.joiner("\r\n");
+    ////auto records = csvReader(input, null);
+    //auto records = csvReader!(Tuple!(string, string, string, string))(input);
+    //foreach (record; records)
+    //{
+    //    writeln(record[0] ~ " " ~ record[2]);
+    //    //time ~= record[0];
+    //    //data ~= record[2];
+    //}
+    //
+    return new dataTrace("", time, data);
+}
+
 string workingDir;
 dataTrace[] datasets;
 
@@ -122,7 +169,35 @@ int main(string[] argv)
         {
             dataColumn = 2;
         }
+        try
+        {
+            datasets ~= getTraceFromCsv(buildPath(workingDir, f), dataColumn);
+        }
+        catch(FileException)
+        {
+            writeln("Could not parse file " ~ buildPath(workingDir, f));
+        }
+        writeln(f, " ", dataColumn);
     }
+
+    //write results to file, bluntly overwriting
+    auto reportFile = File(buildPath(workingDir, "BGScanEval.tsv"),"w");
+    import std.conv : to;
+    foreach(dt; datasets)
+    {
+        reportFile.write(dt.name ~ " mean" ~ '\t');
+        reportFile.write(dt.name ~ " stdev" ~ '\t');
+        reportFile.write(dt.name ~ " slope" ~ 't');
+    }
+    reportFile.writeln();
+    foreach(dt; datasets)
+    {
+        reportFile.write(to!string(dt.mean) ~ '\t');
+        reportFile.write(to!string(dt.stdev) ~ '\t');
+        reportFile.writeln(to!string(dt.slope) ~ 't');
+    }
+    reportFile.writeln();
+    reportFile.close();
     return 0;
 }
 
