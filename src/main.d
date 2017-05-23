@@ -109,7 +109,12 @@ int main(string[] argv)
     if (workingDir.length == 0) {return 1;}
 
     //at this stage, we have found our working directory
-    foreach(f; fileList(workingDir, ["csv"]))
+    import std.algorithm.mutation : SwapStrategy;
+    import std.algorithm.sorting : sort;
+    import std.path : buildPath;
+    import std.string : toUpper;
+    foreach(f; fileList(workingDir, ["csv"])
+                .sort!((a, b) => a.toUpper < b.toUpper, SwapStrategy.stable))
     {
         int dataColumn = 3;
         import std.algorithm.searching : canFind;
