@@ -50,6 +50,9 @@ unittest
 }
 public:
     string name;
+    
+/** Constructor that takes data arrays directly to make a new data trace
+*/
     this(string name, double[] time, double[] data)
     in
     {
