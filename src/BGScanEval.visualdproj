@@ -818,5 +818,6 @@
  </Config>
  <Folder name="BGScanEval">
   <File path="main.d" />
+  <File path="UCS2File.d" />
  </Folder>
 </DProject>
