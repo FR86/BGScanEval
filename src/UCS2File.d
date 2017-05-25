@@ -3,6 +3,18 @@ module UCS2File;
 import std.stdio : File;
 import std.typecons : Flag, Yes, No;
 alias KeepTerminator = Flag!"keepTerminator";
+
+char[] readlnUCS2LE(File f, char terminator) {
+    static char[1024*4] buffer;
+    int i;
+    while(f.rawRead(buffer[i .. i+2]) != null) {
+        if (buffer[i] == terminator)
+            break;
+        i+=2;
+    }
+
+    return buffer[0 .. i];
+}
 struct ByUCS2Line
 {
 private:
@@ -16,10 +28,9 @@ private:
     PImpl impl;
 
 public:
-    this(File f, KeepTerminator kt = No.keepTerminator,
-            wstring terminator = "\r\n"w)
+    this(File f, char terminator = '\n')
     {
-        impl = PImpl(f, kt, terminator);
+        impl = PImpl(f, terminator);
     }
 
     @property bool empty()
@@ -27,7 +38,7 @@ public:
         return impl.refCountedPayload.empty;
     }
 
-    @property wchar[] front()
+    @property char[] front()
     {
         return impl.refCountedPayload.front;
     }
@@ -42,17 +53,14 @@ private:
     {
     private:
         File file;
-        wchar[] line;
-        wchar[] buffer;
-        wstring terminator;
-        KeepTerminator keepTerminator;
+        char[] line;
+        char terminator;
 
     public:
-        this(File f, KeepTerminator kt, wstring terminator)
+        this(File f, char terminator)
         {
             file = f;
             this.terminator = terminator;
-            keepTerminator = kt;
             popFront();
         }
 
@@ -62,7 +70,7 @@ private:
             return line is null;
         }
 
-        @property wchar[] front()
+        @property char[] front()
         {
             return line;
         }
@@ -71,23 +79,16 @@ private:
         {
             import std.algorithm.searching : endsWith;
             assert(file.isOpen);
-            line = buffer;
-            file.readln(line, terminator);
-            if (line.length > buffer.length)
-            {
-                //expands the buffer maybe?
-                buffer = line;
-            }
+            line = file.readlnUCS2LE(terminator);
             import std.range.primitives : empty;
             if (line.empty)
             {
                 file.detach();
                 line = null;
             }
-            else if (keepTerminator == No.keepTerminator
-                    && line.endsWith(terminator))
+            else if (line.endsWith(['\x0d', '\x00']))
             {
-                line = line[0 .. line.length - terminator.length];
+                line = line[0 .. line.length - 2];
             }
         }
     }
