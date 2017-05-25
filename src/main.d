@@ -158,7 +158,7 @@ import std.file : FileException;
     Throws:
         FileException if path cannot be found, anything goes wrong when reading or things don't add up in the file
 */
-dataTrace getTraceFromCsv(string filePath, int dataColumn)
+dataTrace getTraceFromCsv(string filePath, string traceName, int dataColumn)
 body
 {
     double[] time, data;
@@ -190,7 +190,41 @@ body
         data ~= recordArray[dataColumn];
     }
 
-    return new dataTrace("", time, data);
+    return new dataTrace(traceName, time, data);
+}
+
+string getTraceName(string fileNameWithExtension, string extension = ".csv")
+{
+    import std.regex;
+    //https://regex101.com/ is a great tool to get these cooked up
+    auto theRegex = regex("(?<=_)[A-Za-z0-9]?[A-Za-z]+[A-Za-z0-9]*(?:_[0-9])?(?=" ~ extension ~ ")");
+    auto match = fileNameWithExtension.matchFirst(theRegex);
+    if(!match.empty)
+    {
+        return(match.hit);
+    }
+    else
+    {
+        return "";
+    }
+}
+unittest
+{
+    auto positive = ["170515_195306_asd_O2.csv" : "O2",
+                     "170515_195824__CO2_2.csv" : "CO2_2",
+                     "170515_200449__Ar.csv" : "Ar",
+                     "170515_200607__H2O.csv" : "H2O",
+                     "170515_200330__CO2_3.csv": "CO2_3"];
+    auto negative = ["170515_195824___2.csv",
+                     "170515_200330__CO2_32.csv"];
+    foreach (key; positive.keys)
+    {
+        assert(getTraceName(key) == positive[key], "\"" ~ key ~ "\" creates a false negative match.");
+    }
+    foreach (str; negative)
+    {
+        assert(getTraceName(str).length == 0, "\"" ~ str ~ "\" creates a false positive match.");
+    }
 }
 
 string workingDir;
@@ -210,14 +244,15 @@ int main(string[] argv)
                 .sort!((a, b) => a.toUpper < b.toUpper, SwapStrategy.stable))
     {
         int dataColumn = 3;
+        string traceName = getTraceName(f);
         import std.algorithm.searching : canFind;
-        if(f.canFind("_O2", "_CO2_2", "_CO2_3"))
+        if(["O2", "CO2_2", "CO2_3"].canFind(traceName))
         {
             dataColumn = 2;
         }
         try
         {
-            datasets ~= getTraceFromCsv(buildPath(workingDir, f), dataColumn);
+            datasets ~= getTraceFromCsv(buildPath(workingDir, f), traceName, dataColumn);
         }
         catch(FileException)
         {
