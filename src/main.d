@@ -100,6 +100,55 @@ public:
     }
 }
 
+import std.exception;
+
+class BGScanFileException : Exception
+{
+    string filename;
+    // copied and adapted from std.csv
+    // FIXME: Use std.exception.basicExceptionCtors here once bug #11500 is fixed
+    // https://issues.dlang.org/show_bug.cgi?id=11500
+    /++
+        Params:
+            msg  = The message for the exception.
+            file = The file where the exception occurred.
+            line = The line number where the exception occurred.
+            next = The previous exception in the chain of exceptions, if any.
+    +/
+    this(string msg, string file = __FILE__, size_t line = __LINE__,
+         Throwable next = null) @nogc @safe pure nothrow
+    {
+        super(msg, file, line, next);
+    }
+
+    /++
+        Params:
+            msg  = The message for the exception.
+            next = The previous exception in the chain of exceptions.
+            file = The file where the exception occurred.
+            line = The line number where the exception occurred.
+    +/
+    this(string msg, Throwable next, string file = __FILE__,
+         size_t line = __LINE__) @nogc @safe pure nothrow
+    {
+        super(msg, file, line, next);
+    }
+
+    this(string msg, string filename, Throwable next = null,
+         string file = __FILE__, size_t line = __LINE__) @nogc @safe pure nothrow
+    {
+        super(msg, next, file, line);
+        this.filename = filename;
+    }
+
+    override string toString() @safe pure const
+    {
+        return "(File: " ~ filename ~ ") " ~ msg;
+    }
+
+}
+
+
 import std.file : FileException;
 /** This function will try to read a data trace from a csv file.
     Time is assumed to be in the first column (index 0).
@@ -110,10 +159,6 @@ import std.file : FileException;
         FileException if path cannot be found, anything goes wrong when reading or things don't add up in the file
 */
 dataTrace getTraceFromCsv(string filePath, int dataColumn)
-in
-{
-    assert(dataColumn > 0 && dataColumn < 4);
-}
 body
 {
     double[] time, data;
@@ -132,12 +177,19 @@ body
     auto filteredLines = commaLessLines.filter!(line => line.length > 0);
     auto input = filteredLines.joiner("\r\n");
     
-    auto records = csvReader!(Tuple!(double, double, double, double))(input, null);
+    auto records = csvReader!double(input, null);
     foreach (record; records)
     {
-        time ~= record[0];
-        data ~= record[2];
+        import std.array : array;
+        auto recordArray = array(record);
+        if (dataColumn > recordArray.length - 1)
+        {
+            throw new BGScanFileException("Found less columns than expected!", filePath, null, __FILE__, __LINE__);
+        }
+        time ~= recordArray[0];
+        data ~= recordArray[dataColumn];
     }
+
     return new dataTrace("", time, data);
 }
 
@@ -159,7 +211,7 @@ int main(string[] argv)
     {
         int dataColumn = 3;
         import std.algorithm.searching : canFind;
-        if(f.canFind("_O2", "_CO2_2"))
+        if(f.canFind("_O2", "_CO2_2", "_CO2_3"))
         {
             dataColumn = 2;
         }
