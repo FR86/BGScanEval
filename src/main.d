@@ -187,7 +187,7 @@ int main(string[] argv)
     {
         reportFile.write(to!string(dt.mean) ~ '\t');
         reportFile.write(to!string(dt.stdev) ~ '\t');
-        reportFile.writeln(to!string(dt.slope) ~ '\t');
+        reportFile.write(to!string(dt.slope) ~ '\t');
     }
     reportFile.writeln();
     reportFile.close();
