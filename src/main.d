@@ -110,6 +110,11 @@ import std.file : FileException;
         FileException if path cannot be found, anything goes wrong when reading or things don't add up in the file
 */
 dataTrace getTraceFromCsv(string filePath, int dataColumn)
+in
+{
+    assert(dataColumn > 0 && dataColumn < 4);
+}
+body
 {
     double[] time, data;
     
@@ -118,32 +123,21 @@ dataTrace getTraceFromCsv(string filePath, int dataColumn)
     import std.csv;
     import std.typecons;
     import std.string : chomp;
+    import UCS2File;
     auto dataFile = File(filePath, "r");
-    auto rawLines = dataFile.byLine!(wchar,wchar);
-    foreach (line; rawLines)
-    {
-        import std.utf;
-        //Duh. UTF16 sucks.
-        writeln(line.byUTF!wchar()[0], ',', line.byUTF!wchar()[1]);
-    }
-    auto commaLessLines = rawLines.map!(line => chomp(line, ","));
+    auto rawLines = dataFile.ByUCS2Line;
+    auto convertedLines = rawLines.map!(line => cast(wchar[])(line));
+    auto commaLessLines = convertedLines.map!(line => chomp(line, ","));
     
-    auto filteredLines = rawLines.filter!(line => line.length > 0);
-    foreach (line; filteredLines)
+    auto filteredLines = commaLessLines.filter!(line => line.length > 0);
+    auto input = filteredLines.joiner("\r\n");
+    
+    auto records = csvReader!(Tuple!(double, double, double, double))(input, null);
+    foreach (record; records)
     {
-        writeln(line);
+        time ~= record[0];
+        data ~= record[2];
     }
-    //
-    //auto input = filteredLines.joiner("\r\n");
-    ////auto records = csvReader(input, null);
-    //auto records = csvReader!(Tuple!(string, string, string, string))(input);
-    //foreach (record; records)
-    //{
-    //    writeln(record[0] ~ " " ~ record[2]);
-    //    //time ~= record[0];
-    //    //data ~= record[2];
-    //}
-    //
     return new dataTrace("", time, data);
 }
 
@@ -177,7 +171,6 @@ int main(string[] argv)
         {
             writeln("Could not parse file " ~ buildPath(workingDir, f));
         }
-        writeln(f, " ", dataColumn);
     }
 
     //write results to file, bluntly overwriting
@@ -187,14 +180,14 @@ int main(string[] argv)
     {
         reportFile.write(dt.name ~ " mean" ~ '\t');
         reportFile.write(dt.name ~ " stdev" ~ '\t');
-        reportFile.write(dt.name ~ " slope" ~ 't');
+        reportFile.write(dt.name ~ " slope" ~ '\t');
     }
     reportFile.writeln();
     foreach(dt; datasets)
     {
         reportFile.write(to!string(dt.mean) ~ '\t');
         reportFile.write(to!string(dt.stdev) ~ '\t');
-        reportFile.writeln(to!string(dt.slope) ~ 't');
+        reportFile.writeln(to!string(dt.slope) ~ '\t');
     }
     reportFile.writeln();
     reportFile.close();
