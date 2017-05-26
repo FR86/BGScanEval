@@ -55,14 +55,25 @@ version(windows)
             {
                 CloseClipboard();
             }
+            //Clear any trash
 		    EmptyClipboard();
+            //make space for our string (plus zero terminator) and receive a handle to the new memory object
 		    void* handle = GlobalAlloc(2, mystr.length + 1);
+            //FIXME: bail if this returns null, optionally calling GetLastError to find out why
+            //lock the piece of memory and get a pointer to its first byte
 		    void* ptr = GlobalLock(handle);
+            //FIXME: bail if null, like above
             import core.stdc.string : memcpy;
             import std.string : toStringz;
+            //copy our string over to the allocated and locked piece of memory
+            //this should work out because the implementation of toStringz just makes a copy and appends a zero
 		    memcpy(ptr, toStringz(mystr), mystr.length + 1);
+            
+            //unlock the piece of memory
 		    GlobalUnlock(handle);
-
+            //Do NOT GlobalFree the memory, ownership is transferred to clipboard, which will free later!
+            
+            //Sets the clipboard data (text mode, 1) to our little memory block 
 		    SetClipboardData(1, handle);
 	    }
 	    return mystr;
