@@ -260,23 +260,29 @@ int main(string[] argv)
         }
     }
 
+    //calculate results summary
+
+    import std.array : appender;
+    auto header = appender!string();
+    auto data = appender!string();
+    foreach(dt; datasets)
+    {
+        header.put(dt.name ~ " mean" ~ '\t');
+        header.put(dt.name ~ " stdev" ~ '\t');
+        header.put(dt.name ~ " slope" ~ '\t');
+
+        import std.conv : to;
+        data.put(to!string(dt.mean) ~ '\t');
+        data.put(to!string(dt.stdev) ~ '\t');
+        data.put(to!string(dt.slope) ~ '\t');
+    }
     //write results to file, bluntly overwriting
     auto reportFile = File(buildPath(workingDir, "BGScanEval.tsv"),"w");
-    import std.conv : to;
-    foreach(dt; datasets)
-    {
-        reportFile.write(dt.name ~ " mean" ~ '\t');
-        reportFile.write(dt.name ~ " stdev" ~ '\t');
-        reportFile.write(dt.name ~ " slope" ~ '\t');
-    }
-    reportFile.writeln();
-    foreach(dt; datasets)
-    {
-        reportFile.write(to!string(dt.mean) ~ '\t');
-        reportFile.write(to!string(dt.stdev) ~ '\t');
-        reportFile.write(to!string(dt.slope) ~ '\t');
-    }
-    reportFile.writeln();
+    //cut the last tab, write header to file
+    reportFile.writeln(header.data[0 .. $ - 1]);
+    string dataSummary = data.data[0 .. $ - 1];
+    //write data to file
+    reportFile.writeln(dataSummary);
     reportFile.close();
     return 0;
 }
