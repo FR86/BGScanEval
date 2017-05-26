@@ -284,6 +284,9 @@ int main(string[] argv)
     //write data to file
     reportFile.writeln(dataSummary);
     reportFile.close();
+    //copy data to clipboard
+    import windowsClipboard : setTextClipboard;
+    setTextClipboard(dataSummary);
     return 0;
 }
 
