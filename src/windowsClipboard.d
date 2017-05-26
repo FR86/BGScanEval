@@ -71,6 +71,7 @@ version(windows)
             
             //unlock the piece of memory
 		    GlobalUnlock(handle);
+            //FIXME: check if the result is zero and therefore, the operation succeeded.
             //Do NOT GlobalFree the memory, ownership is transferred to clipboard, which will free later!
             
             //Sets the clipboard data (text mode, 1) to our little memory block 
