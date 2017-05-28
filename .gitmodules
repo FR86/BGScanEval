@@ -1,3 +1,6 @@
 [submodule "deps/dstats"]
 	path = deps/dstats
 	url = https://github.com/DlangScience/dstats.git
+[submodule "deps/dlangui"]
+	path = deps/dlangui
+	url = https://github.com/buggins/dlangui.git
