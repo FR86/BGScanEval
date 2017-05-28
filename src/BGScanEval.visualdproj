@@ -53,7 +53,7 @@
   <cccmd>$(CC) -c</cccmd>
   <ccTransOpt>1</ccTransOpt>
   <program>$(DMDInstallDir)windows\bin\dmd.exe</program>
-  <imppath>..\..\dstats\source</imppath>
+  <imppath>..\deps\dstats\source</imppath>
   <fileImppath />
   <outdir>$(PlatformName)\$(ConfigurationName)</outdir>
   <objdir>$(OutDir)</objdir>
@@ -155,7 +155,7 @@
   <cccmd>$(CC) -c</cccmd>
   <ccTransOpt>1</ccTransOpt>
   <program>$(DMDInstallDir)windows\bin\dmd.exe</program>
-  <imppath>..\..\dstats\source</imppath>
+  <imppath>..\deps\dstats\source</imppath>
   <fileImppath />
   <outdir>$(PlatformName)\$(ConfigurationName)</outdir>
   <objdir>$(OutDir)</objdir>
@@ -359,7 +359,7 @@
   <cccmd>$(CC) -c</cccmd>
   <ccTransOpt>1</ccTransOpt>
   <program>$(DMDInstallDir)windows\bin\dmd.exe</program>
-  <imppath>..\..\dstats\source</imppath>
+  <imppath>..\deps\dstats\source</imppath>
   <fileImppath />
   <outdir>$(PlatformName)\$(ConfigurationName)</outdir>
   <objdir>$(OutDir)</objdir>
@@ -461,7 +461,7 @@
   <cccmd>$(CC) -c</cccmd>
   <ccTransOpt>1</ccTransOpt>
   <program>$(DMDInstallDir)windows\bin\dmd.exe</program>
-  <imppath>..\..\dstats\source</imppath>
+  <imppath>..\deps\dstats\source</imppath>
   <fileImppath />
   <outdir>$(PlatformName)\$(ConfigurationName)</outdir>
   <objdir>$(OutDir)</objdir>
@@ -563,7 +563,7 @@
   <cccmd>$(CC) -c</cccmd>
   <ccTransOpt>1</ccTransOpt>
   <program>$(DMDInstallDir)windows\bin\dmd.exe</program>
-  <imppath>..\..\dstats\source</imppath>
+  <imppath>..\deps\dstats\source</imppath>
   <fileImppath />
   <outdir>$(PlatformName)\$(ConfigurationName)</outdir>
   <objdir>$(OutDir)</objdir>

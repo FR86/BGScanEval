@@ -1,0 +1,3 @@
+[submodule "deps/dstats"]
+	path = deps/dstats
+	url = https://github.com/DlangScience/dstats.git
