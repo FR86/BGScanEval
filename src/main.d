@@ -148,6 +148,168 @@ class BGScanFileException : Exception
 
 }
 
+struct resultSummary
+{
+    string header;
+    string data;
+}
+
+
+int main(string[] argv)
+{
+    //quit if we have a problem with the cmd line parameters
+    if (!checkCmdLineParams(argv)){return 1;}
+    auto wd = getWorkingDir(argv[1]);
+
+    //calculate statistics for the files in the directory
+    auto datasets = calcDirStatistics(wd);
+    if (datasets.length == 0){return 1;}
+
+    //get the numbers into summary form
+    auto summary = getResultSummary(datasets);
+
+    //write results to file, bluntly overwriting
+    
+    import std.path : buildPath;
+    writeSummaryToFile(summary, buildPath(wd, "BGScanEval.tsv"));
+
+    //copy data to clipboard
+    import windowsClipboard : setTextClipboard;
+    setTextClipboard(summary.data);
+    return 0;
+}
+
+bool checkCmdLineParams(string[] cmdLineParams)
+{
+    if (cmdLineParams.length > 1)
+    {
+        auto wd = cmdLineParams[1];
+        import std.path : exists;
+        //check if wd is in principle a valid path and if it exists
+        if ((wd !is null) && wd.exists)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Get a working directory from command line parameters.
+ * 
+ * Returns: The working directory extracted from the second command line parameter
+ * or an empty string if that parameter does not contain anything we can get an existing directory from.
+ */
+string getWorkingDir(string fileOrDirStr)
+{
+    string wd = fileOrDirStr;
+    
+    //check if fileOrDirStr points to a file instead of a directory
+    import std.file : isDir;
+    if (!wd.isDir)
+    {
+        //strip the file off the path
+        import std.path : dirName;
+        wd = wd.dirName;
+    }
+    import std.path : buildNormalizedPath;
+    return buildNormalizedPath(wd);
+}
+
+dataTrace[] calcDirStatistics(string dir)
+{
+    dataTrace[] datasets;
+    //at this stage, we have found our working directory
+    import std.algorithm.mutation : SwapStrategy;
+    import std.algorithm.sorting : sort;
+    import std.string : toUpper;
+    foreach(f; fileList(dir, ["csv"])
+                .sort!((a, b) => a.toUpper < b.toUpper, SwapStrategy.stable))
+    {
+        int dataColumn = 3;
+        string traceName = getTraceName(f);
+        import std.algorithm.searching : canFind;
+        import std.path : buildPath;
+        if(["O2", "CO2_2", "CO2_3"].canFind(traceName))
+        {
+            dataColumn = 2;
+        }
+        try
+        {
+            datasets ~= getTraceFromCsv(buildPath(dir, f), traceName, dataColumn);
+        }
+        catch(FileException)
+        {
+            writeln("Could not parse file " ~ buildPath(dir, f));
+        }
+    }
+    return datasets;
+}
+
+/**
+ * Get a list of files in a directory, optionally filtered by extension.
+ * Params:
+ *  extensions = Optional array of extensions _without_ preceding dot.
+ * Returns: An array of strings representing the found files.
+ */
+string[] fileList(string pathname, string[] extensions = [])
+in
+{
+    import std.path : exists;
+    import std.file : isDir;
+    //Right now, I consider the use on a path that hasn't been checked for existence a programming error.
+    //this is a problem when directory is moved/renamed/deleted in the meantime
+    assert (pathname.exists && pathname.isDir);
+    //Using empty extension strings is an error as well
+    if(extensions.length > 0)
+    {
+        foreach (ext; extensions)
+        {
+            assert(ext.length > 0);
+            //Check for max length?
+        }
+    }
+}
+body
+{
+    import std.file;
+    import std.path;
+    import std.algorithm;
+    import std.array;
+    
+    if (extensions.length == 0)
+    {
+        //no extensions specified, just give all files in the folder, just this folder
+        return std.file.dirEntries(pathname, SpanMode.shallow)
+            //make sure what we have is a file
+            .filter!(a => a.isFile)
+            //get the name of the file off the DirEntry and strip directory
+            .map!(a => std.path.baseName(a.name))
+            //copy results into new dynamic array
+            .array;
+    }
+    else
+    {
+        //build a pattern to feed into the filtered version of dirEntries
+        string pattern;
+        pattern = "*.{";
+        foreach(ext; extensions)
+        {
+            pattern ~= ext ~ ",";
+        }
+        import std.string;
+        //Strip the last comma
+        pattern = pattern.chop ~ "}";
+
+        return std.file.dirEntries(pathname, pattern, SpanMode.shallow)
+            .filter!(a => a.isFile)
+            .map!(a => std.path.baseName(a.name))
+            .array;
+    }
+    
+
+    
+}
 
 import std.file : FileException;
 /** This function will try to read a data trace from a csv file.
@@ -227,41 +389,13 @@ unittest
     }
 }
 
-string workingDir;
-dataTrace[] datasets;
-
-int main(string[] argv)
+resultSummary getResultSummary(dataTrace[] datasets)
+in
 {
-    workingDir = getWorkingDir(argv);
-    if (workingDir.length == 0) {return 1;}
-
-    //at this stage, we have found our working directory
-    import std.algorithm.mutation : SwapStrategy;
-    import std.algorithm.sorting : sort;
-    import std.path : buildPath;
-    import std.string : toUpper;
-    foreach(f; fileList(workingDir, ["csv"])
-                .sort!((a, b) => a.toUpper < b.toUpper, SwapStrategy.stable))
-    {
-        int dataColumn = 3;
-        string traceName = getTraceName(f);
-        import std.algorithm.searching : canFind;
-        if(["O2", "CO2_2", "CO2_3"].canFind(traceName))
-        {
-            dataColumn = 2;
-        }
-        try
-        {
-            datasets ~= getTraceFromCsv(buildPath(workingDir, f), traceName, dataColumn);
-        }
-        catch(FileException)
-        {
-            writeln("Could not parse file " ~ buildPath(workingDir, f));
-        }
-    }
-
-    //calculate results summary
-
+    assert(datasets.length > 0);
+}
+body
+{
     import std.array : appender;
     auto header = appender!string();
     auto data = appender!string();
@@ -276,117 +410,20 @@ int main(string[] argv)
         data.put(to!string(dt.stdev) ~ '\t');
         data.put(to!string(dt.slope) ~ '\t');
     }
-    //write results to file, bluntly overwriting
-    auto reportFile = File(buildPath(workingDir, "BGScanEval.tsv"),"w");
-    //cut the last tab, write header to file
-    reportFile.writeln(header.data[0 .. $ - 1]);
-    string dataSummary = data.data[0 .. $ - 1];
-    //write data to file
-    reportFile.writeln(dataSummary);
+
+    resultSummary rs;
+
+    //cut the last tabs
+    rs.header = header.data[0 .. $ - 1];
+    rs.data = data.data[0 .. $ - 1];
+
+    return rs;
+}
+
+void writeSummaryToFile(resultSummary rs, string outputPath)
+{
+    auto reportFile = File(outputPath, "w");
+    reportFile.writeln(rs.header);
+    reportFile.writeln(rs.data);
     reportFile.close();
-    //copy data to clipboard
-    import windowsClipboard : setTextClipboard;
-    setTextClipboard(dataSummary);
-    return 0;
-}
-
-
-/**
- * Get a working directory from command line parameters.
- * 
- * Returns: The working directory extracted from the second command line parameter
- * or an empty string if that parameter does not contain anything we can get an existing directory from.
- */
-string getWorkingDir(string[] cmdLineParams)
-{
-    string wd;
-    bool existingPathFound = false;
-    //check if we have received a path to work with at all,
-    //need to have at least 2 cmd line parameters for that
-    if (cmdLineParams.length > 1)
-    {
-        wd = cmdLineParams[1];
-        import std.path : exists;
-        //check if wd is in principle a valid path 
-        if (wd.exists)
-        {
-            existingPathFound = true;
-            //check if wd points to a file instead of a directory
-            import std.file : isDir;
-            if (!wd.isDir)
-            {
-                //strip the file off the path
-                import std.path : dirName;
-                wd = wd.dirName;
-            }
-        }
-    }
-    if (!existingPathFound) {wd = "";}
-    import std.path : buildNormalizedPath;
-    return buildNormalizedPath(wd);
-}
-
-/**
- * Get a list of files in a directory, optionally filtered by extension.
- * Params:
- *  extensions = Optional array of extensions _without_ preceding dot.
- * Returns: An array of strings representing the found files.
- */
-string[] fileList(string pathname, string[] extensions = [])
-in
-{
-    import std.path : exists;
-    import std.file : isDir;
-    //Right now, I consider the use on a path that hasn't been checked for existence a programming error.
-    //this is a problem when directory is moved/renamed/deleted in the meantime
-    assert (pathname.exists && pathname.isDir);
-    //Using empty extension strings is an error as well
-    if(extensions.length > 0)
-    {
-        foreach (ext; extensions)
-        {
-            assert(ext.length > 0);
-            //Check for max length?
-        }
-    }
-}
-body
-{
-    import std.file;
-    import std.path;
-    import std.algorithm;
-    import std.array;
-    
-    if (extensions.length == 0)
-    {
-        //no extensions specified, just give all files in the folder, just this folder
-        return std.file.dirEntries(pathname, SpanMode.shallow)
-            //make sure what we have is a file
-            .filter!(a => a.isFile)
-            //get the name of the file off the DirEntry and strip directory
-            .map!(a => std.path.baseName(a.name))
-            //copy results into new dynamic array
-            .array;
-    }
-    else
-    {
-        //build a pattern to feed into the filtered version of dirEntries
-        string pattern;
-        pattern = "*.{";
-        foreach(ext; extensions)
-        {
-            pattern ~= ext ~ ",";
-        }
-        import std.string;
-        //Strip the last comma
-        pattern = pattern.chop ~ "}";
-
-        return std.file.dirEntries(pathname, pattern, SpanMode.shallow)
-            .filter!(a => a.isFile)
-            .map!(a => std.path.baseName(a.name))
-            .array;
-    }
-    
-
-    
 }
